@@ -1,0 +1,64 @@
+{% extends 'base.html' %} {% load humanize %} {% block pageContent %}
+<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+    <div class="card card-default rounded-0 shadow ">
+        <div class="card-header">
+            <div class="d-flex w-100 align-items-center justify-content-between">
+                <h4 class="card-title fw-bold">Inventory</h4>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="container-fluid">
+                <table class="table table-bordered" id="product-list">
+                    <colgroup>
+                        <col width="5%">
+                        <col width="35%">
+                        <col width="35%">
+                        <col width="25%">
+                    </colgroup>
+                    <thead>
+                        <tr class="bg-gradient bg-primary bg-opacity-50 text-light">
+                            <th class="px-2 py-2 text-center">#</th>
+                            <th class="px-2 py-2 text-center">Product</th>
+                            <th class="px-2 py-2 text-center">Available Stock</th>
+                            <th class="px-2 py-2 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td class="px-2 py-1 align-middle text-center">{{ forloop.counter }}</td>
+                            <td class="px-2 py-1 align-middle">{{ product }}</td>
+                            <td class="px-2 py-1 align-middle text-end">{{ product.count_inventory }}</td>
+                            <td class="px-2 py-1 align-middle text-center">
+                                <a class="btn btn-outline-primary btn-sm" href="{% url 'inventory-history-page' product.pk %}" data-id="{{ product.pk }}" title="View History">
+                                    <i class="fa fa-eye text-dark"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock pageContent %} {% block ScriptBlock %}
+<script>
+    $(function() {
+        $('#product-list').DataTable({
+            columnDefs: [{
+                orderable: false,
+                targets: 5
+            }],
+            initComplete: function(settings, json) {
+                $('table td, table th').addClass('px-2 py-1')
+            },
+            drawCallback: function(settings) {
+                $('table td, table th').addClass('px-2 py-1')
+            }
+        })
+    })
+
+    
+</script>
+{% endblock ScriptBlock %}

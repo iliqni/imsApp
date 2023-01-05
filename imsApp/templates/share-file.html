@@ -1,0 +1,39 @@
+{% extends 'base.html' %} {% load customfilter %} {% block headerContent %}
+<style>
+    main {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+    }
+</style>
+{% endblock headerContent %} {% block pageContent %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8 col-sm-12 col-xs-12">
+        <div class="card card-default border rounded-0">
+            <div class="card-header">
+                <h5 class="card-title"><b>Shared File</b></h5>
+            </div>
+            <div class="card-body">
+                <div class="container-fluid">
+                    <dl>
+                        <dt class="text-muted"><b>Title:</b></dt>
+                        <dd class="ps-4">{{ post.title }}</dd>
+                        <dt class="text-muted"><b>Description:</b></dt>
+                        <dd class="ps-4">{{ post.description }}</dd>
+                        <dt class="text-muted"><b>Uploaded By:</b></dt>
+                        <dd class="ps-4">{{ post.user.username }}</dd>
+                        <dt class="text-muted"><b>Filename:</b></dt>
+                        <dd class="ps-4">{{ post.file_path|replaceBlank:'uploads/' }}</dd>
+                    </dl>
+                    <center>
+                        <a download="{{ post.file_path|replaceBlank:'uploads/' }}" href="{{ post.file_path.url }}" class="btn btn-primary rounded-pill col-6"><i class="fa fa-download"></i> Download File</a>
+                    </center>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock pageContent %}

@@ -1,0 +1,208 @@
+{% extends 'base.html' %} {% load humanize %} {% block pageContent %}
+<div class="container pt-3">
+    <div class="card card-default border shadow rounded-0">
+        <div class="card-header">
+            <div class="w-100 d-flex justify-content-between">
+                <h5 class="fw-bolder card-title">Sales Transaction</h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="conteiner-fluid">
+                <form action="" id="sale-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="transaction" value="1">
+                    <div class="row">
+                        <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
+                            <div class="from-group">
+                                <label for="customer" class="control-label">Customer Name</label>
+                                <input type="text" id="customer" name="customer" class="form-control rounded-0" required>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <fieldset>
+                        <legend>Items</legend>
+                        <div class="row align-items-end">
+                            <div class="col-lg-5 col-md-6 col-sm-12 col-xs-12">
+                                <div class="from-group">
+                                    <label for="pid" class="control-label">Product</label>
+                                    <select type="text" id="pid" class="form-control rounded-0">
+                                        <option value="" selected="selected" disabled="disabled"></option>
+                                        {% for product in products %}
+                                            <option value="{{ product.pk }}">{{ product }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-2 col-sm-12 col-xs-12">
+                                <button class="btn btn-sm btn-light border bg-gradient rounded-0 shadow-0" id="add_to_list" type="button"><i class="fa fa-plus"></i> Add to List</button>
+                            </div>
+                        </div>
+                        <br>
+                        <br>
+                        <table class="table table-bordered" id="product-tbl">
+                            <colgroup>
+                                <col width="5%">
+                                <col width="15%">
+                                <col width="30%">
+                                <col width="25%">
+                                <col width="25%">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th class="text-center px-2 py-1"></th>
+                                    <th class="text-center px-2 py-1">QTY</th>
+                                    <th class="text-center px-2 py-1">Product</th>
+                                    <th class="text-center px-2 py-1">Price</th>
+                                    <th class="text-center px-2 py-1">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                            <tfoot>
+                                <th colspan="4" class="text-center"><b>Total</b></th>
+                                <th class="text-end">
+                                    <input type="hidden" name="total" value="0">
+                                    <span class="fw-bold" id="total">0.00</span>
+                                </th>
+                            </tfoot>
+                        </table>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+        <div class="card-footer py-1 text-end">
+            <button class="btn btn-primary bg-gradient px-3 rounded-0" form="sale-form"><i class="fa fa-save"></i> Save</button>
+        </div>
+    </div>
+</div>
+<noscript id="prod-item-clone">
+    <tr class="item">
+        <td class="align-middle text-center px-2 py-1">
+            <input type="hidden" name="pid[]" values="">
+            <input type="hidden" class="input-price" name="price[]" values="">
+            <button class="btn btn-outline-danger btn-sm rem-item" type="button"><i class="fa fa-times"></i></button>
+        </td>
+        <td class="align-middle text-center px-2 py-1"><input type="number" min="0" name="quantity[]" value="1" class="form-control rounded-0  text-center input-quantity"></td>
+        <td class="align-middle px-2 py-1 product_name">product 101</td>
+        <td class="align-middle text-end px-2 py-1 product_price">0.00</td>
+        <td class="align-middle text-end px-2 py-1 product_total">0.00</td>
+    </tr>
+</noscript> {% endblock pageContent %} {% block ScriptBlock %}
+<script>
+    function calc() {
+        var gtotal = 0
+        $('#product-tbl tbody tr').each(function() {
+            var price = $(this).find('.input-price').val()
+            var quantity = $(this).find('.input-quantity').val()
+            price = price > 0 ? price : 0
+            quantity = quantity > 0 ? quantity : 0
+            console.log(price, quantity)
+            var total = parseFloat(price) * parseFloat(quantity)
+            $(this).find('.product_total').text(parseFloat(total).toLocaleString('en-US'))
+            gtotal += parseFloat(total)
+        })
+        $('#total').text(parseFloat(gtotal).toLocaleString('en-US'))
+        $('[name="total"]').val(gtotal)
+    }
+    $(function() {
+        $('#pid').select2({
+            placeholder: 'Please Select Product here',
+            width: "100%"
+        })
+
+        $('#add_to_list').click(function() {
+            pid = $('#pid').val()
+            if (pid == '' || pid == null) {
+                return false;
+            }
+            start_loader()
+            $.ajax({
+                url: '{% url "get-product" %}/' + pid,
+                method: "GET",
+                dataType: 'json',
+                error: err => {
+                    alert('An error occured while fetching product data')
+                    end_loader()
+                },
+                success: function(resp) {
+                    if (resp.status == 'success') {
+                        var data = resp.data
+                        if ($('#product-tbl tbody tr[data-id="' + data.id + '"]').length > 0) {
+                            alert("Product Already on th list")
+                        } else {
+                            var tr = $($('noscript#prod-item-clone').html()).clone()
+                            tr.attr('data-id', data.id)
+                            tr.find('input[name="pid[]"]').val(data.id)
+                            tr.find('input[name="price[]"]').val(data.price)
+                            tr.find('.product_name').text(data.product)
+                            tr.find('.product_price').text(parseFloat(data.price).toLocaleString('en-US'))
+                            tr.find('.product_total').text(parseFloat(data.price).toLocaleString('en-US'))
+                            $('#product-tbl tbody').append(tr)
+                            tr.find('[name="quantity[]"]').on('change input', function(e) {
+                                calc()
+                            })
+                            calc()
+                            tr.find('[name="quantity[]"]').attr('name', "quantity[" + data.id + "]")
+                            tr.find('[name="price[]"]').attr('name', "price[" + data.id + "]")
+                            tr.find('.rem-item').click(function(){
+                                tr.remove()
+                                calc()
+                            })
+
+                        }
+                        $('#pid').val('').trigger('change')
+                    } else if (!!resp.msg) {
+                        alert(resp.msg)
+                    }
+                    end_loader()
+                }
+            })
+        })
+
+        $('#sale-form').submit(function(e) {
+            e.preventDefault();
+            var _this = $(this)
+            $('.err-msg').remove();
+            var el = $('<div>')
+            el.addClass("alert alert-danger err-msg")
+            el.hide()
+            if (_this[0].checkValidity() == false) {
+                _this[0].reportValidity();
+                return false;
+            }
+            start_loader();
+            $.ajax({
+                url: "{% url 'save-sales' %}",
+                data: new FormData($(this)[0]),
+                cache: false,
+                contentType: false,
+                processData: false,
+                method: 'POST',
+                type: 'POST',
+                dataType: 'json',
+                error: err => {
+                    console.log(err)
+                    alert("An error occured ", 'error');
+                    end_loader();
+                },
+                success: function(resp) {
+                    if (typeof resp == 'object' && resp.status == 'success') {
+                        el.removeClass("alert alert-danger err-msg ")
+                        location.reload()
+                    } else if (resp.status == 'failed' && !!resp.msg) {
+                        el.html(resp.msg)
+                    } else {
+                        el.text("An error occured ", 'error');
+                        end_loader();
+                        console.err(resp)
+                    }
+                    _this.prepend(el)
+                    el.show('slow')
+                    $("html, body, .modal ").scrollTop(0);
+                    end_loader()
+                }
+            })
+        })
+    })
+</script>
+{% endblock ScriptBlock %}

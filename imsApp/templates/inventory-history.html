@@ -1,0 +1,139 @@
+{% extends 'base.html' %} {% load humanize %} {% block pageContent %}
+<div class="container pt-3">
+    <div class="card card-default border shadow rounded-0">
+        <div class="card-header">
+            <div class="w-100 d-flex justify-content-between">
+                <h5 class="fw-bolder card-title">Product Stock History</h5>
+                <button class="btn btn-primary btn-sm rounded-0 bg-gradient px-3" type="button" id="add_stock"><i class="fa fa-plus"></i> Add Stock</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="conteiner-fluid">
+                <fieldset class="border-bottom">
+                    <legend>Product Details</legend>
+                    <dl>
+                        <dt class="tex-muted">Code</dt>
+                        <dd class="ps-4">{{ product.code }}</dd>
+                        <dt class="tex-muted">Name</dt>
+                        <dd class="ps-4">{{ product.name }}</dd>
+                        <dt class="tex-muted">Description</dt>
+                        <dd class="ps-4">{{ product.description }}</dd>
+                        <dt class="tex-muted">Price</dt>
+                        <dd class="ps-4">{{ product.price|intcomma }}</dd>
+                    </dl>
+                </fieldset>
+                <fieldset>
+                    <legend>History</legend>
+                    <table class="table table-bordered" id="stock-tbl">
+                        <colgroup>
+                            <col width="5%">
+                            <col width="25%">
+                            <col width="25%">
+                            <col width="25%">
+                            <col width="20%">
+                        </colgroup>
+                        <thead>
+                            <th class="text-center">#</th>
+                            <th class="text-center">Data/Time</th>
+                            <th class="text-center">Quantity</th>
+                            <th class="text-center">Type</th>
+                            <th class="text-center">Action</th>
+                        </thead>
+                        <tbody>
+                            {% for stock in stocks %}
+                            <tr>
+                                <td class="text-center">{{ forloop.counter }}</td>
+                                <td class="">{{ stock.date_created|date:"Y-m-d h:i A" }}</td>
+                                <td class="text-center">{{ stock.quantity|floatformat:0|intcomma }}</td>
+                                <td class="text-center">
+                                    {% if stock.type == '1' %}
+                                    <span class="badge px-3 rounded-pill bg-primary bg-gradient">Stock In</span> {% else %}
+                                    <span class="badge px-3 rounded-pill bg-danger bg-gradient">Stock Out</span> {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if stock.type == '1' %}
+                                    <a class="btn btn-outline-primary btn-sm edit-data" href="javascript:void(0)" data-id="{{ stock.pk }}" title="Edit">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-outline-danger btn-sm delete-data" type="button" data-id="{{ stock.pk }}" title="Delete">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                    {% else %}
+                                    ------
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </fieldset>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock pageContent %} {% block ScriptBlock %}
+<script>
+    $(function() {
+        $('#add_stock').click(function() {
+            uni_modal("<i class='fa fa-plus'></i> Add New Stock to <b>{{ product }}</b>", '{% url "manage-stock" product.pk %}')
+        })
+        $('.edit-data').click(function() {
+            uni_modal("<i class='fa fa-edit'></i> Update Stock", '{% url "manage-stock" product.pk %}/' + $(this).attr('data-id'))
+        })
+
+        $('.delete-data').click(function() {
+            _conf("Are you sure to delete this Stock Data?", 'delete_stock', [$(this).attr('data-id')])
+        })
+        $('#stock-tbl').DataTable({
+            columnDefs: [{
+                orderable: false,
+                targets: 4
+            }],
+            initComplete: function(settings, json) {
+                $('table td, table th').addClass('px-2 py-1')
+            },
+            drawCallback: function(settings) {
+                $('table td, table th').addClass('px-2 py-1')
+            }
+        })
+    })
+
+    function delete_stock($id) {
+        start_loader();
+        var _this = $(this)
+        $('.err-msg').remove();
+        var el = $('<div>')
+        el.addClass("alert alert-danger err-msg")
+        el.hide()
+        $.ajax({
+            url: '{% url "delete-stock" %}',
+            headers: {
+                'X-CSRFToken': "{{csrf_token}}"
+            },
+            method: 'POST',
+            data: {
+                id: $id
+            },
+            dataType: 'json',
+            error: err => {
+                console.log(err)
+                el.text('An error occurred.')
+                el.show('slow')
+                end_loader()
+            },
+            success: function(resp) {
+                if (resp.status == 'success') {
+                    location.reload()
+                } else if (!!resp.msg) {
+                    el.text('An error occurred.')
+                    el.show('slow')
+                } else {
+                    el.text('An error occurred.')
+                    el.show('slow')
+                }
+                end_loader()
+            }
+        })
+    }
+</script>
+{% endblock ScriptBlock %}

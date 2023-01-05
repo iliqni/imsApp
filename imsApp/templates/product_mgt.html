@@ -1,0 +1,131 @@
+{% extends 'base.html' %} {% load humanize %} {% block pageContent %}
+<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+    <div class="card card-default rounded-0 shadow ">
+        <div class="card-header">
+            <div class="d-flex w-100 align-items-center justify-content-between">
+                <h4 class="card-title fw-bold">Product Categories</h4>
+                <div class="tools">
+                    <button type="button" class="btn btn-primary rounded-0 bg-gradient btn-sm" id='add_new'><i class="fa fa-plus"></i> Add New</button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="container-fluid">
+                <table class="table table-bordered" id="product-list">
+                    <colgroup>
+                        <col width="5%">
+                        <col width="15%">
+                        <col width="20%">
+                        <col width="25%">
+                        <col width="10%">
+                        <col width="10%">
+                        <col width="15%">
+                    </colgroup>
+                    <thead>
+                        <tr class="bg-gradient bg-primary bg-opacity-50 text-light">
+                            <th class="px-2 py-2 text-center">#</th>
+                            <th class="px-2 py-2 text-center">Date/Time</th>
+                            <th class="px-2 py-2 text-center">Name</th>
+                            <th class="px-2 py-2 text-center">Description</th>
+                            <th class="px-2 py-2 text-center">Price</th>
+                            <th class="px-2 py-2 text-center">Status</th>
+                            <th class="px-2 py-2 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td class="px-2 py-1 align-middle text-center">{{ forloop.counter }}</td>
+                            <td class="px-2 py-1 align-middle">{{ product.date_created|date:"Y-m-d h:i A" }}</td>
+                            <td class="px-2 py-1 align-middle">{{ product }}</td>
+                            <td class="px-2 py-1 align-middle">
+                                <p class="m-0 text-truncate">{{ product.description }}</p>
+                            </td>
+                            <td class="px-1 py-1 align-middle text-center">
+                                {% if product.status == '1' %}
+                                <span class="badge bg-primary bg-gradient rounded-pill px-2">Active</span> {% else %}
+                                <span class="badge bg-secondary bg-gradient rounded-pill px-2">Inactive</span> {% endif %}
+                            </td>
+                            <td class="px-2 py-1 align-middle text-end">{{ product.price|intcomma }}</td>
+                            <td class="px-2 py-1 align-middle text-center">
+                                <a class="btn btn-outline-primary btn-sm edit-data" href="javascript:void(0)" data-id="{{ product.pk }}" title="Edit">
+                                    <i class="fa fa-edit"></i>
+                                </a>
+                                <button class="btn btn-outline-danger btn-sm delete-data" type="button" data-id="{{ product.pk }}" title="Delete">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock pageContent %} {% block ScriptBlock %}
+<script>
+    $(function() {
+        $('#add_new').click(function() {
+            uni_modal('<i class="fa fa-plus"></i> Add Product', '{% url "manage-product" %}', 'modal-md')
+        })
+        $('.edit-data').click(function() {
+            uni_modal('<i class="fa fa-edit"></i> Edit Product', '{% url "manage-product" %}/' + $(this).attr('data-id'), 'modal-md')
+        })
+        $('.delete-data').click(function() {
+            _conf("Are you sure to delete this Product permanently?", "delete_product", [$(this).attr('data-id')])
+        })
+
+        $('#product-list').DataTable({
+            columnDefs: [{
+                orderable: false,
+                targets: 5
+            }],
+            initComplete: function(settings, json) {
+                $('table td, table th').addClass('px-2 py-1')
+            },
+            drawCallback: function(settings) {
+                $('table td, table th').addClass('px-2 py-1')
+            }
+        })
+    })
+
+    function delete_product($id) {
+        start_loader();
+        var _this = $(this)
+        $('.err-msg').remove();
+        var el = $('<div>')
+        el.addClass("alert alert-danger err-msg")
+        el.hide()
+        $.ajax({
+            url: '{% url "delete-product" %}',
+            headers: {
+                'X-CSRFToken': "{{csrf_token}}"
+            },
+            method: 'POST',
+            data: {
+                id: $id
+            },
+            dataType: 'json',
+            error: err => {
+                console.log(err)
+                el.text('An error occurred.')
+                el.show('slow')
+                end_loader()
+            },
+            success: function(resp) {
+                if (resp.status == 'success') {
+                    location.reload()
+                } else if (!!resp.msg) {
+                    el.text('An error occurred.')
+                    el.show('slow')
+                } else {
+                    el.text('An error occurred.')
+                    el.show('slow')
+                }
+                end_loader()
+            }
+        })
+    }
+</script>
+{% endblock ScriptBlock %}

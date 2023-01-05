@@ -1,0 +1,5 @@
+Django
+Pillow
+cryptography
+fontawesomefree
+more_itertools
